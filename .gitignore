@@ -1,5 +1,6 @@
 # Build outputs
-build/
+bin/
+obj/
 *.o
 *.a
 *.so
@@ -27,3 +28,6 @@ Thumbs.db
 # Dependencies (json.hpp is tracked, but binary deps aren't)
 *.deb
 *.rpm
+
+# Auto-generated files
+VERSION

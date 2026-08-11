@@ -3,9 +3,20 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
+#include <cctype>
+#include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+
+namespace fs = std::filesystem;
+
 using json = nlohmann::json;
 
 namespace weather {
+
+static constexpr int GEO_TTL = 86400; // coordenadas: 24 h
+static constexpr int WX_TTL  = 600;   // clima: 10 min
 
 static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     ((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -37,15 +48,72 @@ static std::string httpGet(const std::string& url) {
     return readBuffer;
 }
 
-Location resolveCity(const std::string& city) {
-    Location loc{};
-    char* escaped = curl_easy_escape(nullptr, city.c_str(), 0);
-    std::string url =
-        "https://geocoding-api.open-meteo.com/v1/search?name=" + std::string(escaped)
-        + "&count=1&language=es&format=json";
-    curl_free(escaped);
+// ---- Cache local basada en archivos en $HOME/.cache/wheater_channel ----
 
-    std::string body = httpGet(url);
+static std::string cacheDir() {
+    const char* home = std::getenv("HOME");
+    std::string base = home ? std::string(home) : "/tmp";
+    return base + "/.cache/wheater_channel";
+}
+
+static std::string sanitize(const std::string& s) {
+    std::string out;
+    for (char c : s) {
+        out += std::isalnum(static_cast<unsigned char>(c)) ? c : '_';
+    }
+    return out.empty() ? "x" : out;
+}
+
+static std::string cachePath(const std::string& key) {
+    return cacheDir() + "/" + sanitize(key) + ".json";
+}
+
+bool cacheFresh(const std::string& key, int ttlSeconds) {
+    std::error_code ec;
+    std::string p = cachePath(key);
+    if (!fs::exists(p, ec)) return false;
+    auto ftime = fs::last_write_time(p, ec);
+    auto now = fs::file_time_type::clock::now();
+    auto age = std::chrono::duration_cast<std::chrono::seconds>(now - ftime).count();
+    return age >= 0 && age <= ttlSeconds;
+}
+
+static std::string cacheRead(const std::string& key) {
+    std::ifstream f(cachePath(key));
+    if (!f) return "";
+    std::stringstream ss;
+    ss << f.rdbuf();
+    return ss.str();
+}
+
+static void cacheWrite(const std::string& key, const std::string& content) {
+    if (content.empty()) return;
+    std::error_code ec;
+    fs::create_directories(cacheDir(), ec);
+    std::ofstream f(cachePath(key));
+    if (f) f << content;
+}
+
+Location resolveCity(const std::string& city, bool refresh) {
+    Location loc{};
+    loc.query = city;
+
+    std::string key = "geo_" + city;
+    std::string body;
+
+    if (!refresh && cacheFresh(key, GEO_TTL)) {
+        body = cacheRead(key);
+    } else {
+        char* escaped = curl_easy_escape(nullptr, city.c_str(), 0);
+        std::string url =
+            "https://geocoding-api.open-meteo.com/v1/search?name=" + std::string(escaped)
+            + "&count=1&language=es&format=json";
+        curl_free(escaped);
+
+        body = httpGet(url);
+        if (!body.empty()) cacheWrite(key, body);
+    }
+
     if (body.empty()) {
         return loc;
     }
@@ -106,15 +174,24 @@ std::string weatherEmoji(int code) {
     return "🌡️";
 }
 
-WeatherData fetchWeather(const Location& loc) {
-    std::string url =
-        "https://api.open-meteo.com/v1/forecast?latitude=" + std::to_string(loc.latitude)
-        + "&longitude=" + std::to_string(loc.longitude)
-        + "&current_weather=true"
-        + "&daily=temperature_2m_max,temperature_2m_min"
-        + "&timezone=" + loc.timezone;
+WeatherData fetchWeather(const Location& loc, bool refresh) {
+    std::string key = "wx_" + loc.query;
+    std::string body;
 
-    std::string body = httpGet(url);
+    if (!refresh && cacheFresh(key, WX_TTL)) {
+        body = cacheRead(key);
+    } else {
+        std::string url =
+            "https://api.open-meteo.com/v1/forecast?latitude=" + std::to_string(loc.latitude)
+            + "&longitude=" + std::to_string(loc.longitude)
+            + "&current_weather=true"
+            + "&daily=temperature_2m_max,temperature_2m_min"
+            + "&timezone=" + loc.timezone;
+
+        body = httpGet(url);
+        if (!body.empty()) cacheWrite(key, body);
+    }
+
     WeatherData data = parseWeather(body);
     data.ok = data.ok && (body.find("current_weather") != std::string::npos);
     return data;

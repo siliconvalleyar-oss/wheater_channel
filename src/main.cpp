@@ -4,33 +4,48 @@
 
 int main(int argc, char* argv[]) {
     std::string city;
+    bool refresh = false;
 
-    if (argc >= 2) {
-        std::string arg = argv[1];
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
         if (arg == "-h" || arg == "--help") {
             std::cout << "Uso: " << (argc > 0 ? argv[0] : "weather")
-                      << " [ciudad]\n";
+                      << " [ciudad] [-r|--refresh]\n";
             std::cout << "Muestra el clima actual de la ciudad indicada.\n";
             std::cout << "Si no se pasa ciudad, usa Buenos Aires por defecto.\n";
+            std::cout << "-r, --refresh  Fuerza actualizacion ignorando la cache local.\n";
             return 0;
         }
-        city = arg;
-    } else {
+        if (arg == "-r" || arg == "--refresh") {
+            refresh = true;
+        } else if (!city.empty()) {
+            city += " " + arg;
+        } else {
+            city = arg;
+        }
+    }
+
+    if (city.empty()) {
         city = "Buenos Aires";
     }
 
     std::cout << "Consultando clima para: " << city << "...\n";
 
-    weather::Location loc = weather::resolveCity(city);
+    weather::Location loc = weather::resolveCity(city, refresh);
     if (!loc.ok) {
         std::cerr << "No se pudo encontrar la ciudad: " << city << "\n";
         return 1;
     }
 
-    weather::WeatherData data = weather::fetchWeather(loc);
+    bool usedCache = !refresh && weather::cacheFresh("wx_" + loc.query, 600);
+    weather::WeatherData data = weather::fetchWeather(loc, refresh);
     if (!data.ok) {
         std::cerr << "Error obteniendo/procesando datos del clima\n";
         return 1;
+    }
+
+    if (usedCache) {
+        std::cout << "(desde cache local)\n";
     }
 
     std::cout << "==============================\n";

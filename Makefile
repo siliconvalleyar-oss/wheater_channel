@@ -11,12 +11,13 @@ SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 
 TARGET = $(BIN_DIR)/weather
+VERSION_FILE = VERSION
 
 THIRD_PARTY = $(INCLUDE_DIR)/nlohmann/json.hpp
 
 .DEFAULT_GOAL := all
 
-.PHONY: all clean run install-deps help tag install-hooks
+.PHONY: all clean run install-deps help tag install-hooks version
 
 tag:
 	@bash script_tools/version.sh patch
@@ -27,7 +28,24 @@ install-hooks:
 	@chmod +x .git/hooks/pre-push
 	@echo "Hooks instalados en .git/hooks/"
 
-all: $(TARGET)
+version:
+	@if [ -f $(VERSION_FILE) ]; then \
+		echo "Version actual: $$(cat $(VERSION_FILE))"; \
+	else \
+		echo "Generando $(VERSION_FILE)..."; \
+		bash -c ' \
+			LAST_TAG=$$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0"); \
+			if [[ "$$LAST_TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$$ ]]; then \
+				MAJOR=$${BASH_REMATCH[1]}; MINOR=$${BASH_REMATCH[2]}; PATCH=$${BASH_REMATCH[3]}; \
+				PATCH=$$((PATCH + 1)); \
+				echo "v$$MAJOR.$$MINOR.$$PATCH" > $(VERSION_FILE); \
+			else \
+				echo "v1.0.1" > $(VERSION_FILE); \
+			fi \
+		'; \
+	fi
+
+all: version $(TARGET)
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
@@ -60,4 +78,5 @@ help:
 	@echo "  install-deps- Instala dependencias del sistema"
 	@echo "  tag         - Crea tag semantico y pushea (patch)"
 	@echo "  install-hooks- Instala git hooks (pre-push)"
+	@echo "  version     - Muestra/actualiza VERSION desde ultimo tag"
 	@echo "  help        - Muestra esta ayuda"

@@ -31,8 +31,35 @@ Incluye un cliente **C++17** compilado y un script **Bash**, ambos alimentados p
 - Temperatura máxima y mínima del día
 - Descripción de la condición climática (WMO codes)
 - Interfaz CLI en español
-- Multiplataforma (Linux, macOS)
+- Multiplataforma (Linux, macOS, Raspberry Pi)
 - Sin dependencias externas complejas
+
+## Compatibilidad
+
+| Plataforma | Estado |
+|------------|--------|
+| Linux x86_64 | Soportado |
+| Raspberry Pi OS (armhf/arm64) | Soportado |
+| macOS | Soportado |
+
+### Raspberry Pi
+
+Compilar directamente en la Raspberry Pi:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y g++ make libcurl4-openssl-dev
+make run
+```
+
+El código es C++17 portable. `nlohmann/json` es header-only y `libcurl` está disponible en Raspberry Pi OS.
+
+Para cross-compilation desde x86_64:
+
+```bash
+sudo apt-get install g++-arm-linux-gnueabihf
+make CXX=arm-linux-gnueabihf-g++
+```
 
 ---
 

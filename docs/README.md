@@ -36,6 +36,36 @@ weather_channel/
 - libcurl4-openssl-dev
 - nlohmann/json (incluido)
 
+## Compatibilidad
+
+| Plataforma | Estado |
+|------------|--------|
+| Linux x86_64 | Soportado |
+| Raspberry Pi OS (armhf/arm64) | Soportado |
+| macOS | Soportado |
+
+## Raspberry Pi
+
+Instalar dependencias y compilar directamente en la Raspberry Pi:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y g++ make libcurl4-openssl-dev
+make run
+```
+
+El código es portable C++17 y no requiere librerías nativas adicionales.
+`nlohmann/json` es header-only y funciona en ARM.
+`libcurl` está disponible en los repositorios de Raspberry Pi OS.
+
+Si se requiere cross-compilation desde x86_64:
+
+```bash
+# En Ubuntu/Debian host
+sudo apt-get install g++-arm-linux-gnueabihf
+make CXX=arm-linux-gnueabihf-g++
+```
+
 ## Uso
 
 ### C++ (compilado)

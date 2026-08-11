@@ -14,10 +14,16 @@ TARGET = $(BIN_DIR)/weather
 
 THIRD_PARTY = $(INCLUDE_DIR)/nlohmann/json.hpp
 
-.PHONY: all clean run install-deps help tag
+.PHONY: all clean run install-deps help tag install-hooks
 
 tag:
 	@bash script_tools/version.sh patch
+
+install-hooks:
+	@mkdir -p .git/hooks
+	@cp script_tools/git-hooks/pre-push .git/hooks/pre-push
+	@chmod +x .git/hooks/pre-push
+	@echo "Hooks instalados en .git/hooks/"
 
 all: $(TARGET)
 
@@ -51,4 +57,5 @@ help:
 	@echo "  clean       - Limpia archivos compilados"
 	@echo "  install-deps- Instala dependencias del sistema"
 	@echo "  tag         - Crea tag semantico y pushea (patch)"
+	@echo "  install-hooks- Instala git hooks (pre-push)"
 	@echo "  help        - Muestra esta ayuda"

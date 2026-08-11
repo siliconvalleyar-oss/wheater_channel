@@ -73,7 +73,15 @@ O usando Make:
 make tag  # equivalente a version.sh patch
 ```
 
-El script detecta automáticamente el último tag, incrementa la versión, crea el tag y lo pushea.
+## Git Hooks
+
+Para forzar que cada push tenga un tag:
+
+```bash
+make install-hooks
+```
+
+Esto instala `pre-push` hook que valida que el HEAD tenga un tag antes de permitir el push.
 
 ## Troubleshooting
 

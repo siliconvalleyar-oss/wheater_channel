@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+
+HEAD=$(git rev-parse HEAD)
+TAG=$(git describe --exact-match --tags HEAD 2>/dev/null || true)
+
+if [ -z "$TAG" ]; then
+    echo "ERROR: El commit $HEAD no tiene un tag semantico."
+    echo "Crea uno antes de pushear:"
+    echo "  ./script_tools/version.sh patch|minor|major"
+    echo "  o: make tag"
+    exit 1
+fi
+
+echo "Tag detectado: $TAG -> $HEAD"
+exit 0

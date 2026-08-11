@@ -12,7 +12,7 @@ OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 
 TARGET = $(BIN_DIR)/weather
 
-THIRD_PARTY = $(INCLUDE_DIR)/json.hpp
+THIRD_PARTY = $(INCLUDE_DIR)/nlohmann/json.hpp
 
 .PHONY: all clean run install-deps help
 

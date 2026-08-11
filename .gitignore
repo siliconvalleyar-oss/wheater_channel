@@ -1,0 +1,29 @@
+# Build outputs
+build/
+*.o
+*.a
+*.so
+*.dylib
+weather
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Dependencies (json.hpp is tracked, but binary deps aren't)
+*.deb
+*.rpm

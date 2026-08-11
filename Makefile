@@ -14,7 +14,10 @@ TARGET = $(BIN_DIR)/weather
 
 THIRD_PARTY = $(INCLUDE_DIR)/nlohmann/json.hpp
 
-.PHONY: all clean run install-deps help
+.PHONY: all clean run install-deps help tag
+
+tag:
+	@bash script_tools/version.sh patch
 
 all: $(TARGET)
 
@@ -47,4 +50,5 @@ help:
 	@echo "  run         - Compila y ejecuta"
 	@echo "  clean       - Limpia archivos compilados"
 	@echo "  install-deps- Instala dependencias del sistema"
+	@echo "  tag         - Crea tag semantico y pushea (patch)"
 	@echo "  help        - Muestra esta ayuda"

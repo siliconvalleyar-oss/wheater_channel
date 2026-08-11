@@ -62,6 +62,25 @@ Para agregar nueva unidad (Fahrenheit):
 make run
 ```
 
+### 4. versioning
+
+**Descripción**: Crea y pushea tags semánticos (SemVer) a partir de v1.0.0.
+
+**Uso**:
+```bash
+./script_tools/version.sh patch   # v1.0.0 -> v1.0.1
+./script_tools/version.sh minor   # v1.0.1 -> v1.1.0
+./script_tools/version.sh major   # v1.1.0 -> v2.0.0
+
+# O via Make
+make tag
+```
+
+**Tags actuales**:
+- v1.0.0 - Initial commit
+- v1.0.1 - Fix: move json.hpp to include/nlohmann/
+- v1.1.0 - docs: add Raspberry Pi compatibility section
+
 ## Dependencias Externas
 
 - [Open-Meteo](https://open-meteo.com/) - API de clima gratuita

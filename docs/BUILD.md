@@ -52,6 +52,29 @@ g++ obj/weather.o obj/main.o -o bin/weather -lcurl
 - `obj/*.o` - Archivos objeto intermedios
 - `bin/` y `obj/` son gitignored
 
+## SemVer Tags
+
+Cada push debe tener un tag semántico a partir de `v1.0.0`.
+
+```bash
+# Crear tag patch (bugfix)
+./script_tools/version.sh patch
+
+# Crear tag minor (nueva funcionalidad)
+./script_tools/version.sh minor
+
+# Crear tag major (cambio incompatible)
+./script_tools/version.sh major
+```
+
+O usando Make:
+
+```bash
+make tag  # equivalente a version.sh patch
+```
+
+El script detecta automáticamente el último tag, incrementa la versión, crea el tag y lo pushea.
+
 ## Troubleshooting
 
 ### Error: curl/curl.h no encontrado

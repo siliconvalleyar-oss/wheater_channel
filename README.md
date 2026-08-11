@@ -261,6 +261,27 @@ chmod +x script_tools/*.sh
 
 ---
 
+## Versionado
+
+Este proyecto sigue [SemVer](https://semver.org/lang/es/). Cada push debe tener un tag semántico a partir de `v1.0.0`.
+
+```bash
+# Patch: bugfix
+./script_tools/version.sh patch
+
+# Minor: nueva funcionalidad
+./script_tools/version.sh minor
+
+# Major: cambio incompatible
+./script_tools/version.sh major
+```
+
+O:
+
+```bash
+make tag  # patch por defecto
+```
+
 ## Licencia
 
 MIT

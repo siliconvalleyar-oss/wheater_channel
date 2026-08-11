@@ -12,17 +12,13 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* use
     return size * nmemb;
 }
 
-std::string fetchWeatherJSON() {
+// Realiza un GET con curl y devuelve el cuerpo. Reporta errores por stderr.
+static std::string httpGet(const std::string& url) {
     CURL* curl = curl_easy_init();
     std::string readBuffer;
 
     if (curl) {
-        const char* url =
-            "https://api.open-meteo.com/v1/forecast?latitude=-34.6037&longitude=-58.3816"
-            "&current_weather=true&daily=temperature_2m_max,temperature_2m_min"
-            "&timezone=America%2FArgentina%2FBuenos_Aires";
-
-        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -34,9 +30,43 @@ std::string fetchWeatherJSON() {
         }
 
         curl_easy_cleanup(curl);
+    } else {
+        std::cerr << "No se pudo inicializar curl\n";
     }
 
     return readBuffer;
+}
+
+Location resolveCity(const std::string& city) {
+    Location loc{};
+    char* escaped = curl_easy_escape(nullptr, city.c_str(), 0);
+    std::string url =
+        "https://geocoding-api.open-meteo.com/v1/search?name=" + std::string(escaped)
+        + "&count=1&language=es&format=json";
+    curl_free(escaped);
+
+    std::string body = httpGet(url);
+    if (body.empty()) {
+        return loc;
+    }
+
+    try {
+        auto j = json::parse(body);
+        if (!j.contains("results") || j["results"].empty()) {
+            return loc;
+        }
+        auto r = j["results"][0];
+        loc.latitude = r["latitude"];
+        loc.longitude = r["longitude"];
+        loc.name = r.value("name", "");
+        loc.country = r.value("country", "");
+        loc.timezone = r.value("timezone", "");
+        loc.ok = true;
+    } catch (const std::exception& e) {
+        std::cerr << "Error geocodificando ciudad: " << e.what() << "\n";
+    }
+
+    return loc;
 }
 
 std::string weatherCodeToString(int code) {
@@ -63,15 +93,46 @@ std::string weatherCodeToString(int code) {
     }
 }
 
+std::string weatherEmoji(int code) {
+    if (code == 0) return "☀️";
+    if (code == 1) return "🌤️";
+    if (code == 2) return "⛅";
+    if (code == 3) return "☁️";
+    if (code == 45 || code == 48) return "🌫️";
+    if (code >= 51 && code <= 55) return "🌦️";
+    if (code == 61 || code == 63 || code == 65) return "🌧️";
+    if (code >= 80 && code <= 82) return "🌧️";
+    if (code >= 95 && code <= 99) return "⛈️";
+    return "🌡️";
+}
+
+WeatherData fetchWeather(const Location& loc) {
+    std::string url =
+        "https://api.open-meteo.com/v1/forecast?latitude=" + std::to_string(loc.latitude)
+        + "&longitude=" + std::to_string(loc.longitude)
+        + "&current_weather=true"
+        + "&daily=temperature_2m_max,temperature_2m_min"
+        + "&timezone=" + loc.timezone;
+
+    std::string body = httpGet(url);
+    WeatherData data = parseWeather(body);
+    data.ok = data.ok && (body.find("current_weather") != std::string::npos);
+    return data;
+}
+
 WeatherData parseWeather(const std::string& jsonStr) {
     WeatherData data{};
     try {
         auto j = json::parse(jsonStr);
         data.current_temp = j["current_weather"]["temperature"];
         data.weather_code = j["current_weather"]["weathercode"];
+        data.windspeed = j["current_weather"]["windspeed"];
+        data.winddirection = j["current_weather"]["winddirection"];
+        data.time = j["current_weather"].value("time", "");
         data.temp_max = j["daily"]["temperature_2m_max"][0];
         data.temp_min = j["daily"]["temperature_2m_min"][0];
         data.description = weatherCodeToString(data.weather_code);
+        data.ok = true;
     } catch (const std::exception& e) {
         std::cerr << "Error parseando JSON: " << e.what() << "\n";
     }

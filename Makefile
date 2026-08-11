@@ -14,6 +14,8 @@ TARGET = $(BIN_DIR)/weather
 
 THIRD_PARTY = $(INCLUDE_DIR)/nlohmann/json.hpp
 
+.DEFAULT_GOAL := all
+
 .PHONY: all clean run install-deps help tag install-hooks
 
 tag:
